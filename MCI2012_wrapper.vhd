@@ -66,7 +66,7 @@ architecture behavioral of MCI2012_WRAPPER is
     constant XFER_BYTES     : integer := 13;
 
 		-- input configuration
-      constant DIR_CW         : STD_LOGIC := '0';
+    constant DIR_CW         : STD_LOGIC := '1';
 		constant IDXR_STEP_EDGE : string := "RISING";
 		constant INP_ACTIVE		: STD_LOGIC_VECTOR(0 to 7) := "11111111";         -- (*)not used?
 
@@ -79,7 +79,7 @@ architecture behavioral of MCI2012_WRAPPER is
 		constant DOUT_ACTIVE		: STD_LOGIC_VECTOR(0 to 15) := "1111111111111111"; --(*)TODO: check polarity
 		constant IDXR_LIM_ACTIVE	: STD_LOGIC := '1';			-- TODO: check polarity
 		constant DRVR_STEP_ACTIVE : STD_LOGIC := '0';			-- TODO: check polarity
-    constant LED_ON         : STD_LOGIC := '1';
+    constant LED_ON         : STD_LOGIC := '0';
 
     constant ACTIVE         : STD_LOGIC := '1';
 
@@ -183,8 +183,8 @@ begin
     CLKIN => CLK_50MHZ_PIN, PSCLK => '0', PSEN => '0', PSINCDEC => '0', RST => '0'
   );
 
-  DCM2_RST <= DCM1_LOCKED;
-	
+--  DCM2_RST <= not DCM1_LOCKED;
+--	
 --  CLK_DCM2_INST : DCM_SP
 --  generic map (
 --    CLKDV_DIVIDE => 2.0, CLKFX_DIVIDE => 1, CLKFX_MULTIPLY => 4, CLKIN_DIVIDE_BY_2 => FALSE,
@@ -244,6 +244,10 @@ begin
       --  DI_PIN
     --  outputs
       --  DI
+--  DI_SDI_INST: DEBOUNCE
+--    generic map (DELAY => 128, INVERT => false)
+--    port map (CLK => CLK_128MHZ, RST => RST, I => INP_PIN(0), O => INP(0));
+--
   DI_GEN: for i in 0 to 7 generate
     DI_INST: DEBOUNCE
       generic map (DELAY => 32, INVERT => false)
@@ -373,7 +377,7 @@ begin
   IND_DATA(36 to 39) <= IND_CCW_LIM(2) & IND_CCW_LIM(1) & IND_CCW_LIM(0) & IND_CCW_LIM(4);
   IND_DATA(40 to 43) <= IND_AUXB_LIM(7) & IND_AUXB_LIM(6) & IND_AUXB_LIM(5) & IND_AUXB_LIM(3);
   IND_DATA(44 to 47) <= IND_AUXB_LIM(2) & IND_AUXB_LIM(1) & IND_AUXB_LIM(0) & IND_AUXB_LIM(4);
-
+  
   IND_DATA(48 to 51) <= IND_AUXA_LIM(14) & IND_AUXA_LIM(13) & IND_AUXA_LIM(12) & IND_AUXA_LIM(11);
   IND_DATA(52 to 55) <= IND_AUXA_LIM(10) & IND_AUXA_LIM(9)  & IND_AUXA_LIM(8)  & IND_AUXA_LIM(15);
   IND_DATA(56 to 59) <= IND_CW_LIM(14) & IND_CW_LIM(13) & IND_CW_LIM(12) & IND_CW_LIM(11);
@@ -411,12 +415,26 @@ begin
   -- temporary assignments
    -- LED <= OUTP(0 to 5);
 	
-	LED(0) <= SREG_DATA(0);
-	LED(1) <= not SREG_DATA(0);	
-	LED(2) <= SREG_DATA(1);
-	LED(3) <= not SREG_DATA(1);
-	LED(4) <= '0';	
-	LED(5) <= '0';
+--	LED(0) <= IDXR_DIR_PIN(0);
+	LED(0) <= INP(0);
+--	LED(0) <= '0';
+
+--	LED(1) <= IDXR_DIR(0);	
+--	LED(1) <= OUTP(0);	
+	LED(1) <= INP(1);	
+--	LED(1) <= '0';
+
+--	LED(2) <= DOUT(0);	
+	LED(2) <= INP(2);	
+--	LED(2) <= '0';
+
+	LED(3) <= INP(3);
+--	LED(3) <= '0';
+
+	LED(4) <= OUTP(0);	
+--	LED(4) <= '0';	
+
+	LED(5) <= DOUT(0);
 	
   -- output pin assignments
 	IDXR_LIM_GEN: for i in 0 to 15 generate
@@ -429,19 +447,11 @@ begin
 		DRVR_CW_PIN(i)  <= DRVR_STEP_ACTIVE when DRVR_CW(i) = ACTIVE  else not DRVR_STEP_ACTIVE;
 	end generate;
 
---	OUTP_GEN: for i in 0 to 7 generate
---		OUTP_PIN(i) <= OUTP_ACTIVE(i) when OUTP(i) = '1' else not OUTP_ACTIVE(i);
---	end generate;
+	OUTP_GEN: for i in 0 to 7 generate
+		OUTP_PIN(i) <= OUTP_ACTIVE(i) when OUTP(i) = '1' else not OUTP_ACTIVE(i);
+	end generate;
 
-  OUTP_PIN <= OUTP;
-
-  
---  OUTP_PIN(0) <= CW_LIM(0);
---  OUTP_PIN(1) <= CCW_LIM(0);
---  OUTP_PIN(2) <= IND_CW_LIM(0);    -- = CW_STEP_DISABLE
---  OUTP_PIN(3) <= IND_AUX1_LIM(0);  -- = CW_STEP_DISABLE  
---  OUTP_PIN(4 to 7)   <= (others =>'0'); 
-
+--  OUTP_PIN <= OUTP;
   
   SPI_MISO_PIN <= SPI_MISO when SPI_NCS_PIN = '0' else 'Z'; -- TODO: check if pullup needed
 

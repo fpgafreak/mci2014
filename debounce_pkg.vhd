@@ -11,6 +11,7 @@ package DEBOUNCE_PKG is
   component DEBOUNCE is
     generic (
       DELAY   : integer := 32;
+      RST_VALUE : STD_LOGIC;
       INVERT  : boolean := false
     );
     port (
@@ -32,6 +33,7 @@ use IEEE.MATH_REAL.ALL;
 entity DEBOUNCE is
   generic (
     DELAY   : integer := 32;
+    RST_VALUE : STD_LOGIC;
     INVERT  : boolean := false
   );
   port (
@@ -58,15 +60,72 @@ begin
     end if;
   end process;
 	
+--  DEB_CNT_PROC   : process(CLK)
+--  begin
+--    if CLK'event and CLK = '1' then
+--			if RST = '1' then 
+----				DEB_CNT <= (others => '0');
+--        if INVERT then
+--          if RST_VALUE = '1' then
+--            DEB_CNT <= DEB_CNT_LOW;
+--          else
+--            DEB_CNT <= DEB_CNT_HIGH;
+--          end if;
+--        else
+--          if RST_VALUE = '0' then
+--            DEB_CNT <= DEB_CNT_LOW;
+--          else
+--            DEB_CNT <= DEB_CNT_HIGH;
+--          end if;
+--        end if;
+--			elsif SYNC_REG(2) = '0' and DEB_CNT /= DEB_CNT_LOW then
+--        DEB_CNT <= DEB_CNT - 1;
+--			elsif SYNC_REG(2) = '1' and DEB_CNT /= DEB_CNT_HIGH then
+--        DEB_CNT <= DEB_CNT + 1;
+--			end if;
+--    end if;
+--  end process;
+--
+--  O_PROC   : process(CLK)
+--  begin
+--    if CLK'event and CLK = '1' then
+--			if RST = '1' or DEB_CNT = DEB_CNT_LOW then 
+--				if INVERT then
+--					O <= '1';
+--				else
+--					O <= '0';
+--				end if;
+--			elsif DEB_CNT = DEB_CNT_HIGH then
+--				if INVERT then
+--					O <= '0';
+--				else
+--					O <= '1';
+--				end if;
+--			end if;
+--    end if;
+--  end process;
+
   DEB_CNT_PROC   : process(CLK)
   begin
     if CLK'event and CLK = '1' then
 			if RST = '1' then 
-				DEB_CNT <= (others => '0');
-			elsif SYNC_REG(2) = '0' and DEB_CNT /= DEB_CNT_LOW then
-        DEB_CNT <= DEB_CNT - 1;
-			elsif SYNC_REG(2) = '1' and DEB_CNT /= DEB_CNT_HIGH then
-        DEB_CNT <= DEB_CNT + 1;
+        if RST_VALUE = '1' then
+          DEB_CNT <= DEB_CNT_HIGH;
+        else
+          DEB_CNT <= DEB_CNT_LOW;
+        end if;
+      elsif INVERT then
+        if SYNC_REG(2) = '1' and DEB_CNT /= DEB_CNT_LOW then
+          DEB_CNT <= DEB_CNT - 1;
+        elsif SYNC_REG(2) = '0' and DEB_CNT /= DEB_CNT_HIGH then
+          DEB_CNT <= DEB_CNT + 1;
+        end if;
+      else
+        if SYNC_REG(2) = '0' and DEB_CNT /= DEB_CNT_LOW then
+          DEB_CNT <= DEB_CNT - 1;
+        elsif SYNC_REG(2) = '1' and DEB_CNT /= DEB_CNT_HIGH then
+          DEB_CNT <= DEB_CNT + 1;
+        end if;
 			end if;
     end if;
   end process;
@@ -74,18 +133,17 @@ begin
   O_PROC   : process(CLK)
   begin
     if CLK'event and CLK = '1' then
-			if RST = '1' or DEB_CNT = DEB_CNT_LOW then 
-				if INVERT then
-					O <= '1';
-				else
-					O <= '0';
-				end if;
-			elsif DEB_CNT = DEB_CNT_HIGH then
-				if INVERT then
-					O <= '0';
-				else
-					O <= '1';
-				end if;
+			if RST = '1' then
+        O <= RST_VALUE;
+      else
+        case DEB_CNT is
+          when DEB_CNT_LOW =>
+            O <= '0';
+          when DEB_CNT_HIGH =>
+            O <= '1';
+          when others =>
+            null;
+        end case;  
 			end if;
     end if;
   end process;
